@@ -1,3 +1,0 @@
-# MLOpsZoomcamp
-
-this a test

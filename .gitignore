@@ -1,1 +1,7 @@
 .ipynb_checkpoints/
+.DS_Store
+*/mlruns/*
+*/mlartifacts/*
+*.parquet
+*.bin
+*.pkl
