@@ -7,3 +7,5 @@
 *.pkl
 03-orchestration/mlops/
 03-orchestration/homework_03/.file_versions/
+*/__pycache__/
+*.pickle
