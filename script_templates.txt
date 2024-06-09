@@ -1,0 +1,113 @@
+export AZURE_STORAGE_CONNECTION_STRING=<>
+export AZURE_STORAGE_ACCOUNT=<>
+export AZURE_STORAGE_KEY=<>
+
+azure-storage-blob
+azure-identity
+
+az login --tenant <tenant_id>
+
+############################################################
+###### pushing docker to ACR
+############################################################
+# login into Azure Container Registry
+az acr login --name <container_registry_name> 
+docker tag <image_name>:v1 <container_registry_name>.azurecr.io/<image_name>:v1
+docker push <container_registry_name>.azurecr.io/<image_name>:v1
+
+###### Create container from terminal and passing env variables for better security
+###### Remember to use " for environment-variables and not '
+- az container create \
+    --name <container name> \
+    --image container_registry_name.azurecr.io/<container_image_name>:v1 \
+    --resource-group <overall_resource_group> \
+    --restart-policy Always \
+    --dns-name-label <some_sentence_to_create_public_ip> \
+    --ports 80 9696 \
+    --environment-variables "MODEL_URL"="<blob model url>" "AZURE_STORAGE_CONNECTION_STRING"="<blob connection string>" 
+    
+az container logs --resource-group myResourceGroup --name mycontainer1
+az container delete --name ride-prediction-service --resource-group MLOpsZoomCamp
+
+
+############################################################
+###### MLFlow Codesnippets
+############################################################
+###### Getting MLFlow model versions from registry - PYTHON
+# mlflow.set_tracking_uri('http://20.18.227.5:5000/')
+# mlflow.set_experiment("finally")
+# client = MlflowClient()
+# model_name = "ride-duration-prediction"
+# model_version = "1" 
+# URI = client.get_model_version_download_uri(model_name, model_version)
+# print(URI)
+
+###### Instatiate remote MLFlow in Azure
+
+1. Start VM. Save public key and public IP address to add to alias. Change key permissions to only be accessible by owner
+  
+```bash
+chmod 600 /Users/caiomiyashiro/.ssh/vm-mlops_key.pem
+```
+  
+2. Start PostgreSQL Database and allow VM's IP to connect
+3. Start Storage Container and allow VM's IP to connect
+
+## Connect to VM using bash
+
+1. Writing alias at .ssh/config
+
+``` bash
+Host mlops-zoomcamp
+   HostName 20.18.227.5
+   User azureuser
+   IdentityFile ~/.ssh/vm-mlops_key.pem
+   StrictHostKeyChecking no
+```  
+
+2. Connect to VM using: 
+```bash
+ssh mlops-zoomcamp
+```
+
+3. Install and configure anaconda
+```bash
+wget https://repo.anaconda.com/archive/Anaconda3-2024.02-1-Linux-x86_64.sh
+bash Anaconda3-2024.02-1-Linux-x86_64.sh
+# could install docker and docker container
+
+conda create --name mlflow-tracking
+conda install jupyter scikit-learn  pandas  seaborn  xgboost azure-storage-blob
+pip3 install mlflow psycopg2-binary hyperopt azure-identity
+# conda install -c conda-forge psycopg2-binary will update other packages and create a memory error!
+# conda install mlflow might create error Unable to display MLflow UI - landing page (index.html) not found.
+```
+
+4. Install and configure Azure credentials
+```bash
+brew update && brew install azure-cli  # for mac or the equivalent for windows
+az login  
+# in case of new IP address, you might need to login with "az login --tenant 76529cbb-482f-4415-b366-251e1c034e34"
+```
+
+5. Initiate MLFlow with postgresSQL and blobstorage
+```bash 
+# Setting one of this combination and we DON'T NEED to login to azure
+export AZURE_STORAGE_CONNECTION_STRING="<get from storage container>"
+export AZURE_STORAGE_ACCOUNT="<>"
+export AZURE_STORAGE_KEY="<>"
+
+mlflow server -h 0.0.0.0 -p 5000 --backend-store-uri postgresql://azureuser:<password>@<hostname>:5432/postgres --default-artifact-root wasbs://<blob container>@<storage account>.blob.core.windows.net
+
+# in case of errors, you can test the database connection from the VM
+psql -h mlopspostgress.postgres.database.azure.com -U azureuser -d postgres -p 5432
+
+az storage blob list --account-name mlopsdata37 --container-name mlops-blob --auth-mode login
+
+
+############################################################
+###### Docker Codesnippets
+############################################################
+docker build -t ride-duration-prediction-service:v1 .
+
+docker run -it --rm -p 9696:9696 ride-duration-prediction-service_streaming:v1
