@@ -1,0 +1,6 @@
+FROM agrigorev/zoomcamp-model:mlops-2024-3.10.13-slim
+
+RUN pip install pandas scikit-learn numpy pyarrow
+
+COPY ["starter.py", "starter.py"]
+CMD ["python", "starter.py", "2023", "5"]
