@@ -1,0 +1,8 @@
+pandas
+numpy
+prometheus_client
+sqlalchemy 
+psycopg2-binary
+pytz
+psutil
+pyarrow
