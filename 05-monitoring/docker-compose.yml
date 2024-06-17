@@ -35,6 +35,18 @@ services:
       - front-tier
     restart: always
 
+  evidently_service:
+    build:
+      context: evidently_grafana_monitoring_service
+      dockerfile: Dockerfile
+    depends_on:
+      - grafana
+    ports:
+      - "8085:8085"
+    networks:
+      - back-tier
+      - front-tier
+
   realdatasim:
     build:
       context: .
@@ -43,7 +55,17 @@ services:
       - back-tier
     ports:
       - "8000:8000"
-    restart: always
+    restart: no
+
+  # batchdatasim:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   networks:
+  #     - back-tier
+  #   ports:
+  #     - "8000:8000"
+  #   restart: no
 
   prometheus:
     image: prom/prometheus

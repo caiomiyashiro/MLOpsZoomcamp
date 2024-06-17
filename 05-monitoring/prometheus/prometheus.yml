@@ -2,7 +2,11 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'my_python_app'
+  - job_name: 'evidently'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['evidently_service:8085']
+  - job_name: 'python_service'
     metrics_path: '/metrics'
     static_configs:
       - targets: ['realdatasim:8000']

@@ -1,8 +1,9 @@
 pandas
-numpy
+numpy==1.26.4
 prometheus_client
 sqlalchemy 
 psycopg2-binary
 pytz
 psutil
 pyarrow
+evidently

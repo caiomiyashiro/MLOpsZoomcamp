@@ -13,24 +13,53 @@ def convert_date_to_recent_data(df:pd.DataFrame, date_column:str='lpep_pickup_da
     time_diff = today - lpep_pickup_datetime_f
     return lpep_pickup_datetime_f + np.min(time_diff)
 
-def recreate_empty_table(conn, table_name:str='trips') -> None:
+def recreate_empty_table(conn, table_name:str='trips', version:int=1) -> None:
     cursor = conn.cursor()
 
     # Create a table with the desired columns
-    create_table_query = f"""
+    if version == 1:
+        create_table_query = f"""
 
-        DROP TABLE IF EXISTS {table_name};
+            DROP TABLE IF EXISTS trips;
 
-        CREATE TABLE {table_name} (
-            time TIMESTAMPTZ,
-            trip_distance FLOAT,
-            payment_type VARCHAR(10)
-        )
-        """
+            CREATE TABLE trips (
+                time TIMESTAMPTZ,
+                trip_distance FLOAT,
+                payment_type VARCHAR(10)
+            )
+            """
+    elif version==2:
+        create_table_query = f"""
+
+            DROP TABLE IF EXISTS trips_batch;
+
+            CREATE TABLE trips_batch (
+                time TIMESTAMPTZ,
+                passenger_count INT,
+                trip_distance FLOAT,
+                fare_amount FLOAT,
+                total_amount FLOAT,
+                pulocationid VARCHAR(3),
+                dolocationid VARCHAR(3)          
+            )
+            """
+
+    elif version==3:
+        create_table_query = f"""
+
+            DROP TABLE IF EXISTS evidently_metrics;
+
+            CREATE TABLE evidently_metrics (
+                column_name VARCHAR(50),
+                stattest_name VARCHAR(50),
+                stattest_threshold FLOAT,
+                drift_score FLOAT,
+                drift_detected BOOLEAN 
+            )
+            """
     cursor.execute(create_table_query)
     conn.commit()
 
 def insert_sample_data(df:pd.DataFrame, engine, table_name:str='trips') -> None:
     # Insert data from the DataFrame into the table
-    engine = create_engine(f'postgresql://postgres:example@localhost:5432/postgres')
     df.to_sql(table_name, engine, if_exists='append', index=False)

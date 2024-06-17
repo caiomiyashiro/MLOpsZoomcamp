@@ -1,0 +1,22 @@
+datasets:
+  ride_sharing:
+    column_mapping:
+      datetime_features:
+      - time
+      categorical_features:
+      - payment_type
+      numerical_features:
+      - trip_distance
+    data_format:
+      header: true
+      separator: ','
+    monitors:
+      - data_drift
+    reference_file: ./datasets/ride_sharing.csv
+service:
+  calculation_period_sec: 2
+  min_reference_size: 100
+  moving_reference: false
+  datasets_path: datasets
+  use_reference: true
+  window_size: 50
