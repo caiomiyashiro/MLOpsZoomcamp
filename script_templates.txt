@@ -47,6 +47,7 @@ az container delete --name ride-prediction-service --resource-group MLOpsZoomCam
 1. Start VM. Save public key and public IP address to add to alias. Change key permissions to only be accessible by owner
   
 ```bash
+ssh-keygen -t rsa -b 4096
 chmod 600 /Users/caiomiyashiro/.ssh/vm-mlops_key.pem
 ```
   
@@ -79,6 +80,7 @@ bash Anaconda3-2024.02-1-Linux-x86_64.sh
 conda create --name mlflow-tracking
 conda install jupyter scikit-learn  pandas  seaborn  xgboost azure-storage-blob
 pip3 install mlflow psycopg2-binary hyperopt azure-identity
+python -m ipykernel install --user --name myenv --display-name "Python (myenv)" # for notebook
 # conda install -c conda-forge psycopg2-binary will update other packages and create a memory error!
 # conda install mlflow might create error Unable to display MLflow UI - landing page (index.html) not found.
 ```
@@ -97,9 +99,17 @@ export AZURE_STORAGE_CONNECTION_STRING="<get from storage container>"
 export AZURE_STORAGE_ACCOUNT="<>"
 export AZURE_STORAGE_KEY="<>"
 
-mlflow server -h 0.0.0.0 -p 5000 --backend-store-uri postgresql://azureuser:<password>@<hostname>:5432/postgres --default-artifact-root wasbs://<blob container>@<storage account>.blob.core.windows.net
+mlflow server -h 127.0.0.1 -p 5000 --backend-store-uri postgresql://azureuser:<password>@<hostname>:5432/postgres --default-artifact-root wasbs://<blob container>@<storage account>.blob.core.windows.net
+
+mlflow server \
+    --backend-store-uri sqlite:///mlflow_data/mlflow.db \
+    --default-artifact-root ./mlflow_data/artifacts \
+    --host 0.0.0.0 \
+    --port 5001 &
 
 # in case of errors, you can test the database connection from the VM
+sudo apt install postgresql-client
+psql -U <username> -d <database_name> -h <hostname> -p <port>
 psql -h mlopspostgress.postgres.database.azure.com -U azureuser -d postgres -p 5432
 
 az storage blob list --account-name mlopsdata37 --container-name mlops-blob --auth-mode login
@@ -109,5 +119,66 @@ az storage blob list --account-name mlopsdata37 --container-name mlops-blob --au
 ###### Docker Codesnippets
 ############################################################
 docker build -t ride-duration-prediction-service:v1 .
+docker build --progress=plain --no-cache -t real_data_sim:v1 .  # debugging dockerfile printing commands
 
 docker run -it --rm -p 9696:9696 ride-duration-prediction-service_streaming:v1
+
+docker-compose up --build
+
+docker exec -it <container_id_or_name> /bin/bash
+# run image 
+docker run -it --rm mlops_zoomcamp_finalproject-evidently /bin/bash
+
+docker image prune -f
+
+docker run -it --rm -p 9696:9696 ride-duration-prediction-service:v1 
+
+docker run -it --rm mlops_zoomcamp_finalproject-evidently /bin/sh
+
+# restart with changes
+docker-compose up -d --no-deps <service_name>
+docker-compose up -d --no-deps prediction_service  
+
+############################################################
+###### Terraform Codesnippets
+############################################################
+
+terraform output -raw private_key_pem > ~/.ssh/id_rsa.pem
+chmod 600 ~/.ssh/id_rsa.pem
+ssh -i ~/.ssh/id_rsa.pem azureuser@$(terraform output -raw vm_public_ip_address) 
+ssh -i ~/.ssh/id_rsa.pem azureuser@172.207.126.207
+
+
+# checking cloud-init logs
+sudo cat /var/log/cloud-init-output.log
+
+ssh-keygen -R 4.215.219.42
+
+
+
+############################################################
+###### pre-commit Codesnippets
+############################################################
+
+# creates a config sample and save to a file
+pre-commit sample-config > .pre-commit-config.yaml
+
+pre-commit install
+
+############################################################
+###### Miscellaneous
+############################################################
+
+kill process using a port
+lsof -ti tcp:5001 | xargs kill -9
+
+############################################################
+###### SSH
+############################################################
+scp -i ~/.ssh/id_rsa.pem docker-compose.yml azureuser@4.215.207.30:/home/azureuser/mlops_zoomcamp_finalproject3/docker-compose.yml
+
+# github folder - change owner to allow copy delete, etc
+sudo chown -R azureuser:azureuser mlops_zoomcamp_finalproject/
+
+scp -i ~/.ssh/id_rsa.pem prediction_service/sample_model.pkl azureuser@172.207.126.207:/home/azureuser/mlops_zoomcamp_finalproject/prediction_service/sample_model.pkl
+scp -i ~/.ssh/id_rsa.pem Makefile azureuser@172.207.126.207:/home/azureuser/mlops_zoomcamp_finalproject/Makefile
