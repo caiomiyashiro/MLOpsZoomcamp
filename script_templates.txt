@@ -139,6 +139,8 @@ docker run -it --rm mlops_zoomcamp_finalproject-evidently /bin/sh
 docker-compose up -d --no-deps <service_name>
 docker-compose up -d --no-deps prediction_service  
 
+make docker-down && make docker-up && python scripts/training.py
+
 ############################################################
 ###### Terraform Codesnippets
 ############################################################
@@ -146,7 +148,6 @@ docker-compose up -d --no-deps prediction_service
 terraform output -raw private_key_pem > ~/.ssh/id_rsa.pem
 chmod 600 ~/.ssh/id_rsa.pem
 ssh -i ~/.ssh/id_rsa.pem azureuser@$(terraform output -raw vm_public_ip_address) 
-ssh -i ~/.ssh/id_rsa.pem azureuser@172.207.126.207
 
 
 # checking cloud-init logs
@@ -182,3 +183,6 @@ sudo chown -R azureuser:azureuser mlops_zoomcamp_finalproject/
 
 scp -i ~/.ssh/id_rsa.pem prediction_service/sample_model.pkl azureuser@172.207.126.207:/home/azureuser/mlops_zoomcamp_finalproject/prediction_service/sample_model.pkl
 scp -i ~/.ssh/id_rsa.pem Makefile azureuser@172.207.126.207:/home/azureuser/mlops_zoomcamp_finalproject/Makefile
+
+
+
